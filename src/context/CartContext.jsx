@@ -29,7 +29,7 @@ export function CartProvider({ children }) {
 
   useEffect(() => {
     async function fetchProductsSupabase() {
-      const { data, error } = await supabase.from("product_2v").select();
+      const { data, error } = await supabase.from("product_1v").select();
       if (error) {
         setError(`Fetching products failed! ${error.message}`);
       } else {
