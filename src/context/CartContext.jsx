@@ -32,7 +32,7 @@ export function CartProvider({ children }) {
     // State to manage products API
     // var category = "smartphones";
     // var limit = 10;
-    // var apiUrl = https://dummyjson.com/products/category/${category}?limit=${limit}&select=id,thumbnail,title,price,description;
+    // var apiUrl = `https://dummyjson.com/products/category/${category}?limit=${limit}&select=id,thumbnail,title,price,description`;
 
     // async function fetchProducts() {
     //   try {
@@ -218,14 +218,23 @@ export function CartProvider({ children }) {
   }
 
   const context = {
-    products,
-    loading,
-    error,
-    cart,
-    addToCart,
-    updateQtyCart,
-    removeFromCart,
-    clearCart,
+    products: products,
+    loading: loading,
+    error: error,
+    cart: cart,
+    addToCart: addToCart,
+    updateQtyCart: updateQtyCart,
+    removeFromCart: removeFromCart,
+    clearCart: clearCart,
+    // Cart & products
+    products: products,
+    loading: loading,
+    error: error,
+    cart: cart,
+    addToCart: addToCart,
+    updateQtyCart: updateQtyCart,
+    removeFromCart: removeFromCart,
+    clearCart: clearCart,
   };
 
   return (

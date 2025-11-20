@@ -14,7 +14,7 @@ export function User() {
     if (!session) return;
     async function loadProducts() {
       setLoading(true);
-      const { data, error } = await supabase.from("product").select();
+      const { data, error } = await supabase.from("product_1v").select();
       if (error) {
         console.error(error);
       } else {
@@ -31,7 +31,7 @@ export function User() {
 
     try {
       if (editId) {
-        const { error } = await supabase.from("product").update({
+        const { error } = await supabase.from("product_1v").update({
           title: form.title,
           price: parseFloat(form.price || 0),
           thumbnail: form.thumbnail,
@@ -40,7 +40,7 @@ export function User() {
         if (error) throw error;
         setProducts((p) => p.map((it) => (it.id === editId ? { ...it, ...form, price: parseFloat(form.price) } : it)));
       } else {
-        const { data, error } = await supabase.from("product").insert([
+        const { data, error } = await supabase.from("product_1v").insert([
           {
             title: form.title,
             price: parseFloat(form.price || 0),
@@ -66,7 +66,7 @@ export function User() {
   async function handleDelete(id) {
     if (!confirm("Remover produto?")) return;
     try {
-      const { error } = await supabase.from("product").delete().eq("id", id);
+      const { error } = await supabase.from("product_1v").delete().eq("id", id);
       if (error) throw error;
       setProducts((p) => p.filter((it) => it.id !== id));
     } catch (err) {
