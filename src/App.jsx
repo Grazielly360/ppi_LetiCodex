@@ -9,11 +9,19 @@ import { SessionProvider } from "./context/SessionContext";
 import { Login } from "./components/Login";
 import { ToastContainer } from "react-toastify";
 import { User } from "./components/User";
+import { supabase } from "./utils/supabase";
+
+
+  
+console.log("URL:", import.meta.env.VITE_SUPABASE_URL);
+console.log("KEY:", import.meta.env.VITE_SUPABASE_ANON_KEY);
+
+
 
 export default function App() {
-
   return (
     <>
+    
       <ToastContainer />
       <SessionProvider>
         <CartProvider>

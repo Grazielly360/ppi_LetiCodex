@@ -2,16 +2,7 @@ import { useState, useEffect, createContext, useContext } from "react";
 import { supabase } from "../utils/supabase";
 import { SessionContext } from "./SessionContext";
 
-export const CartContext = createContext({
-  products: [],
-  loading: false,
-  error: null,
-  cart: [],
-  addToCart: () => {},
-  updateQtyCart: () => {},
-  removeFromCart: () => {},
-  clearCart: () => {},
-});
+export const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
   const [products, setProducts] = useState([]);
@@ -218,15 +209,6 @@ export function CartProvider({ children }) {
   }
 
   const context = {
-    products: products,
-    loading: loading,
-    error: error,
-    cart: cart,
-    addToCart: addToCart,
-    updateQtyCart: updateQtyCart,
-    removeFromCart: removeFromCart,
-    clearCart: clearCart,
-    // Cart & products
     products: products,
     loading: loading,
     error: error,

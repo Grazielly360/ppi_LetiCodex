@@ -4,7 +4,7 @@ import { SessionContext } from "../context/SessionContext";
 import { supabase } from "../utils/supabase";
 
 export function User() {
-  const { session, handleSignOut } = useContext(SessionContext);
+  const { session, profile, handleSignOut } = useContext(SessionContext);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ title: "", price: "", thumbnail: "", description: "" });
@@ -27,7 +27,7 @@ export function User() {
 
   async function handleAddOrUpdate(e) {
     e.preventDefault();
-    if (!session || !session.user.user_metadata.admin) return;
+    if (!profile || !profile.admin) return;
 
     try {
       if (editId) {
@@ -84,7 +84,7 @@ export function User() {
 
   return (
     <div className={styles.container}>
-      {session.user.user_metadata.admin ? (
+      {profile?.admin ? (
         <div>
           <h1>Admin Account</h1>
           <form onSubmit={handleAddOrUpdate} className={styles.adminForm}>
@@ -120,15 +120,15 @@ export function User() {
           <div className={styles.userInfo}>
             <p>
               <strong>Username: </strong>
-              {session.user.user_metadata.username}
+              {profile?.username}
             </p>
             <p>
               <strong>Email: </strong>
-              {session.user.email}
+              {profile?.email}
             </p>
             <p>
               <strong>ID: </strong>
-              {session.user.id}
+              {profile?.id}
             </p>
           </div>
         </div>
