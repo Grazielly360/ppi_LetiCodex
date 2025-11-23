@@ -83,52 +83,31 @@ export function SessionProvider({ children }) {
   }, []);
 
   async function handleSignUp(email, password, username) {
-    setSessionLoading(true);
-    setSessionMessage(null);
-    setSessionError(null);
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            // continue enviando metadados se quiser
-            username: username,
-            admin: false,
-          },
-          emailRedirectTo: `${window.location.origin}/signin`,
-        },
-      });
+  setSessionLoading(true);
+  setSessionMessage(null);
+  setSessionError(null);
 
-      if (error) throw error;
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: null,     // remove redirects
+        data: { name: username },
+      },
+    });
 
-      // se o supabase retornar o user.id, tente inserir/upsert na tabela profiles
-      const userId = data?.user?.id;
-      if (userId) {
-        try {
-          await supabase.from("profiles").upsert({
-            id: userId,
-            email,
-            username,
-            admin: false,
-          });
-        } catch (upsertErr) {
-          console.error("profiles upsert error:", upsertErr);
-        }
-      }
+    if (error) throw error;
 
-      if (data.user) {
-        setSessionMessage(
-          "Registration successful! Check your email to confirm your account."
-        );
-        window.location.href = "/signin";
-      }
-    } catch (error) {
-      setSessionError(error.message || String(error));
-    } finally {
-      setSessionLoading(false);
-    }
+    alert("Conta criada com sucesso! Você já pode fazer login.");
+  } catch (error) {
+    console.error("Erro ao cadastrar:", error);
+    setSessionError(error.message || String(error));
+  } finally {
+    setSessionLoading(false);
   }
+}
+
 
   async function handleSignIn(email, password) {
     setSessionLoading(true);
