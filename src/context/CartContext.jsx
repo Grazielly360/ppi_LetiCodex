@@ -8,96 +8,53 @@ export function CartProvider({ children }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    async function fetchProductsSupabase() {
-      const { data, error } = await supabase.from("product_1v").select();
-      if (error) {
-        setError(`Fetching products failed! ${error.message}`);
-      } else {
-        setProducts(data);
-      }
-      setLoading(false);
-    }
-    fetchProductsSupabase();
-    // State to manage products API
-    // var category = "smartphones";
-    // var limit = 10;
-    // var apiUrl = `https://dummyjson.com/products/category/${category}?limit=${limit}&select=id,thumbnail,title,price,description`;
-
-    // async function fetchProducts() {
-    //   try {
-    //     const response = await fetch(apiUrl);
-    //     const data = await response.json();
-    //     setProducts(data.products);
-    //   } catch (error) {
-    //     setError(error);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // }
-    // fetchProducts();
-  }, []);
-
-  // State to manage the cart
   const [cart, setCart] = useState([]);
-
-  // Access session from SessionContext
   const { session } = useContext(SessionContext);
 
-  // Load cart for authenticated user or from localStorage for guests
-  useEffect(() => {
-    let mounted = true;
+  // Função para carregar os produtos
+  async function refreshProducts() {
+    setLoading(true);
+    const { data, error } = await supabase.from("product_1v").select();
+    if (error) {
+      setError(`Erro ao carregar produtos: ${error.message}`);
+    } else {
+      setProducts(data); // Atualiza os produtos no estado
+    }
+    setLoading(false);
 
-    async function loadCart() {
-      if (session && session.user) {
-        try {
-          const { data, error } = await supabase
-            .from("cart")
-            .select("*")
-            .eq("user_id", session.user.id);
-          if (error) {
-            console.error("Error loading cart:", error.message);
-          } else if (mounted) {
-            // Map supabase rows into cart item shape
-            const mapped = data.map((row) => ({
-              id: row.product_id,
-              title: row.title,
-              price: row.price,
-              thumbnail: row.thumbnail,
-              quantity: row.quantity,
-            }));
-            setCart(mapped);
-          }
-        } catch (err) {
-          console.error(err);
-        }
+    if (session && session.user) {
+      const { data: cartData, error: cartError } = await supabase
+        .from("cart")
+        .select("*, product_1v(*)")
+        .eq("user_id", session.user.id);
+
+      if (cartError) {
+        console.error("Error loading cart:", cartError.message);
       } else {
-        // Guest: load from localStorage
-        const guest = localStorage.getItem("cart_guest");
-        if (guest && mounted) {
-          try {
-            setCart(JSON.parse(guest));
-          } catch (err) {
-            setCart([]);
-          }
-        } else if (mounted) {
-          setCart([]);
-        }
+        const mapped = cartData.map((row) => ({
+          id: row.product_id,
+          title: row.product_1v?.title || "",
+          price: row.product_1v?.price || 0,
+          thumbnail: row.product_1v?.thumbnail || "",
+          quantity: row.quantity,
+        }));
+        setCart(mapped);
       }
     }
+  }
 
-    loadCart();
+  // Carregar produtos e carrinho apenas uma vez
+  useEffect(() => {
+    // Verifica se a session já foi carregada antes de fazer qualquer coisa
+    if (session) {
+      refreshProducts();
+    }
+  }, [session]); // Chama apenas quando a session mudar
 
-    return () => {
-      mounted = false;
-    };
-  }, [session]);
-
+  // Função para adicionar produto ao carrinho
   function addToCart(product) {
     const existingProduct = cart.find((item) => item.id === product.id);
     if (session && session.user) {
-      // persist in Supabase
       (async () => {
         try {
           const { data: existing } = await supabase
@@ -123,9 +80,6 @@ export function CartProvider({ children }) {
               {
                 user_id: session.user.id,
                 product_id: product.id,
-                title: product.title || "",
-                price: product.price || 0,
-                thumbnail: product.thumbnail || "",
                 quantity: 1,
               },
             ]);
@@ -136,7 +90,6 @@ export function CartProvider({ children }) {
         }
       })();
     } else {
-      // Guest/localStorage
       if (existingProduct) {
         updateQtyCart(product.id, existingProduct.quantity + 1);
       } else {
@@ -147,6 +100,7 @@ export function CartProvider({ children }) {
     }
   }
 
+  // Remover produto do carrinho
   function removeFromCart(productId) {
     if (session && session.user) {
       (async () => {
@@ -168,11 +122,11 @@ export function CartProvider({ children }) {
     }
   }
 
+  // Atualizar quantidade no carrinho
   function updateQtyCart(productId, quantity) {
     if (session && session.user) {
       (async () => {
         try {
-          // update supabase
           await supabase
             .from("cart")
             .update({ quantity })
@@ -192,6 +146,7 @@ export function CartProvider({ children }) {
     }
   }
 
+  // Limpar carrinho
   function clearCart() {
     if (session && session.user) {
       (async () => {
@@ -217,6 +172,7 @@ export function CartProvider({ children }) {
     updateQtyCart: updateQtyCart,
     removeFromCart: removeFromCart,
     clearCart: clearCart,
+    refreshProducts: refreshProducts,
   };
 
   return (

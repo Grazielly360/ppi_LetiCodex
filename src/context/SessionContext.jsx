@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState } from "react";
+import { createContext, useEffect, useState, useRef } from "react";
 import { supabase } from "../utils/supabase";
 
 export const SessionContext = createContext({
@@ -18,101 +18,126 @@ export function SessionProvider({ children }) {
   const [sessionLoading, setSessionLoading] = useState(false);
   const [sessionMessage, setSessionMessage] = useState(null);
   const [sessionError, setSessionError] = useState(null);
+  const isSigningUpRef = useRef(false);
 
-  // helper: busca o perfil na tabela "profiles"
+  // -------------------------------------------------------------------
+  // FETCH PROFILE
+  // -------------------------------------------------------------------
   async function fetchUserProfile(userId) {
-    if (!userId) {
-      setProfile(null);
-      return;
-    }
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
-      if (error) {
-        console.error("fetchUserProfile error:", error);
-        setProfile(null);
-      } else {
-        setProfile(data || null);
-      }
-    } catch (err) {
-      console.error("fetchUserProfile exception:", err);
-      setProfile(null);
-    }
+  if (!userId) {
+    setProfile(null);
+    return;
   }
 
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    setProfile(data || null);
+  } catch (err) {
+    console.error("fetchUserProfile error:", err);
+    setProfile(null);
+  }
+}
+
+
+  // -------------------------------------------------------------------
+  // INIT SESSION + ON AUTH STATE CHANGE
+  // -------------------------------------------------------------------
   useEffect(() => {
-    // Initialize current session
     let mounted = true;
+
     async function init() {
-      try {
-        const {
-          data: { session: currentSession },
-        } = await supabase.auth.getSession();
-        if (mounted) {
-          setSession(currentSession);
-          await fetchUserProfile(currentSession?.user?.id);
+      const {
+        data: { session: currentSession },
+      } = await supabase.auth.getSession();
+
+      if (mounted) {
+        setSession(currentSession);
+        if (currentSession?.user?.id) {
+          await fetchUserProfile(currentSession.user.id);
         }
-      } catch (err) {
-        console.error("Session init error:", err);
-        setSessionError(err.message || String(err));
       }
     }
+
     init();
 
-    // Listen to auth state changes
     const { data } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      // Se estivermos no fluxo de sign-up, ignoramos mudanças temporárias de sessão
+      if (isSigningUpRef.current) return;
+
       setSession(newSession);
       fetchUserProfile(newSession?.user?.id);
     });
 
-    const subscription = data?.subscription;
+    const sub = data?.subscription;
 
     return () => {
       mounted = false;
-      try {
-        if (subscription && typeof subscription.unsubscribe === "function") {
-          subscription.unsubscribe();
-        }
-      } catch (err) {
-        console.warn("Failed to unsubscribe auth listener:", err);
-      }
+      sub?.unsubscribe?.();
     };
   }, []);
 
-  async function handleSignUp(email, password, username) {
+  // -------------------------------------------------------------------
+  // SIGN UP (SEM LOGIN AUTOMÁTICO + CRIA PROFILE)
+  // -------------------------------------------------------------------
+  async function handleSignUp(email, password, username, onSuccess) {
   setSessionLoading(true);
-  setSessionMessage(null);
   setSessionError(null);
+  isSigningUpRef.current = true;
 
   try {
-    const { data, error } = await supabase.auth.signUp({
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: null,     // remove redirects
-        data: { name: username },
+        emailRedirectTo: undefined,
       },
     });
 
-    if (error) throw error;
+    if (signUpError) throw signUpError;
 
-    alert("Conta criada com sucesso! Você já pode fazer login.");
-  } catch (error) {
-    console.error("Erro ao cadastrar:", error);
-    setSessionError(error.message || String(error));
+    const user = signUpData.user;
+    if (!user) throw new Error("Nenhum usuário retornado.");
+
+    // Registrar o profile
+    const { error: profileError } = await supabase.from("profiles").upsert({
+      id: user.id,
+      email,
+      username,
+      admin: false,
+      created_at: new Date(),
+    });
+    if (profileError) throw profileError;
+
+    // 🔥 NÃO FAZ LOGIN AUTOMÁTICO!
+    await supabase.auth.signOut();
+
+    // Chama toast do Login.jsx
+    if (onSuccess) onSuccess();
+
+    // sinaliza que fluxo de registro terminou (permite onAuthStateChange novamente)
+    isSigningUpRef.current = false;
+  } catch (err) {
+    console.error(err);
+    setSessionError(err.message || String(err));
   } finally {
     setSessionLoading(false);
   }
 }
 
-
+  // -------------------------------------------------------------------
+  // SIGN IN
+  // -------------------------------------------------------------------
   async function handleSignIn(email, password) {
     setSessionLoading(true);
-    setSessionMessage(null);
     setSessionError(null);
+    setSessionMessage(null);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -125,34 +150,41 @@ export function SessionProvider({ children }) {
       if (data.session) {
         setSession(data.session);
         await fetchUserProfile(data.session.user.id);
-        setSessionMessage("Sign in successful!");
+        setSessionMessage("Login realizado com sucesso!");
       }
-    } catch (error) {
-      console.error("SignIn error:", error);
-      setSessionError(error.message || String(error));
+    } catch (err) {
+      console.error("SignIn error:", err);
+      setSessionError(err.message || String(err));
     } finally {
       setSessionLoading(false);
     }
   }
 
+  // -------------------------------------------------------------------
+  // SIGN OUT
+  // -------------------------------------------------------------------
   async function handleSignOut() {
     setSessionLoading(true);
-    setSessionMessage(null);
     setSessionError(null);
+    setSessionMessage(null);
 
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+
       setSession(null);
       setProfile(null);
       window.location.href = "/";
-    } catch (error) {
-      setSessionError(error.message || String(error));
+    } catch (err) {
+      setSessionError(err.message || String(err));
     } finally {
       setSessionLoading(false);
     }
   }
 
+  // -------------------------------------------------------------------
+  // PROVIDER
+  // -------------------------------------------------------------------
   const value = {
     session,
     profile,
@@ -166,6 +198,8 @@ export function SessionProvider({ children }) {
   };
 
   return (
-    <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
+    <SessionContext.Provider value={value}>
+      {children}
+    </SessionContext.Provider>
   );
 }

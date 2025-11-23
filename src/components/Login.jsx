@@ -9,6 +9,11 @@ import { CircularProgress } from "@mui/material";
 import { useNavigate } from "react-router";
 
 export function Login({ value }) {
+  // Componente de Login / Registro
+  // - pode operar em dois modos: "signin" (entrar) ou "register" (cadastrar)
+  // - usa SessionContext para autenticar e mostrar toasts de sucesso/erro
+  // - valida campos básicos antes de enviar
+  
   // User Session Context
   const {
     handleSignIn,
@@ -20,11 +25,7 @@ export function Login({ value }) {
   } = useContext(SessionContext);
 
   const navigate = useNavigate();
-  useEffect(() => {
-    if (session) {
-      navigate("/");
-    }
-  }, [session, navigate]);
+  
 
   const [errors, setErrors] = useState({});
   // const [loading, setLoading] = useState(false);
@@ -40,6 +41,14 @@ export function Login({ value }) {
   useEffect(() => {
     setMode(value);
   }, [value]);
+
+  useEffect(() => {
+    // Navega para a home apenas quando o usuário efetivamente fez sign in
+    // (evita redirecionamento imediato durante fluxo de registro)
+    if (session && mode === "signin") {
+      navigate("/");
+    }
+  }, [session, navigate, mode]);
 
   useEffect(() => {
     // Monitor changes in sessionMessage and sessionError
@@ -85,29 +94,48 @@ export function Login({ value }) {
       }
     }
   }, [sessionMessage, sessionError]);
-  
+
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // Basic validation
+    // Validação básica (mensagens em português)
     const newErrors = {};
-    if (!formValues.email) newErrors.email = "Email is required";
-    if (!formValues.password) newErrors.password = "Password is required";
+    if (!formValues.email) newErrors.email = "E-mail é obrigatório";
+    if (!formValues.password) newErrors.password = "Senha é obrigatória";
     if (mode === "register") {
-      if (!formValues.username) newErrors.username = "Username is required";
+      if (!formValues.username) newErrors.username = "Nome de usuário é obrigatório";
       if (!formValues.confirmPassword)
-        newErrors.confirmPassword = "Confirm Password is required";
+        newErrors.confirmPassword = "Confirmação de senha é obrigatória";
       if (formValues.password !== formValues.confirmPassword)
-        newErrors.confirmPassword = "Passwords do not match";
+        newErrors.confirmPassword = "As senhas não coincidem";
     }
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
     if (mode === "signin") {
       handleSignIn(formValues.email, formValues.password);
+
     } else {
-      handleSignUp(formValues.email, formValues.password, formValues.username);
+      handleSignUp(
+        formValues.email,
+        formValues.password,
+        formValues.username,
+        () => {
+          // 1: mostra o toast
+          toast.success("Conta criada com sucesso!", {
+            autoClose: 1500,
+            transition: Bounce,
+          });
+
+              // 2: espera 1.5s e redireciona para /signin
+              setTimeout(() => {
+                navigate("/signin");
+              }, 1500);
+        }
+      );
     }
+
+
     setFormValues({
       email: "",
       password: "",
@@ -130,7 +158,7 @@ export function Login({ value }) {
 
   return (
     <div className={styles.container}>
-      <h1>{mode === "signin" ? "Sign In" : "Register"}</h1>
+      <h1>{mode === "signin" ? "Entrar" : "Registrar"}</h1>
       <Form
         className={styles.form}
         errors={errors}
@@ -138,14 +166,14 @@ export function Login({ value }) {
         onSubmit={handleSubmit}
       >
         <Field.Root name="email" className={styles.field}>
-          <Field.Label className={styles.label}>Email</Field.Label>
+          <Field.Label className={styles.label}>E-mail</Field.Label>
           <Field.Control
             type="email"
             name="email"
             required
             value={formValues.email}
             onChange={handleInputChange}
-            placeholder="Enter your email"
+            placeholder="Digite seu e-mail"
             className={styles.input}
           />
           <Field.Error className={styles.error} />
@@ -153,14 +181,14 @@ export function Login({ value }) {
 
         {mode === "register" && (
           <Field.Root name="username" className={styles.field}>
-            <Field.Label className={styles.label}>Username</Field.Label>
+            <Field.Label className={styles.label}>Nome de usuário</Field.Label>
             <Field.Control
               type="text"
               name="username"
               required
               value={formValues.username}
               onChange={handleInputChange}
-              placeholder="Enter your username"
+              placeholder="Digite seu nome de usuário"
               className={styles.input}
             />
             <Field.Error className={styles.error} />
@@ -168,7 +196,7 @@ export function Login({ value }) {
         )}
 
         <Field.Root name="password" className={styles.field}>
-          <Field.Label className={styles.label}>Password</Field.Label>
+          <Field.Label className={styles.label}>Senha</Field.Label>
           <div className={styles.inputWrapper}>
             <Field.Control
               type={showPassword ? "text" : "password"}
@@ -176,7 +204,7 @@ export function Login({ value }) {
               required
               value={formValues.password}
               onChange={handleInputChange}
-              placeholder="Enter your password"
+              placeholder="Digite sua senha"
               className={styles.input}
             />
             <button
@@ -195,7 +223,7 @@ export function Login({ value }) {
 
         {mode === "register" && (
           <Field.Root name="confirmPassword" className={styles.field}>
-            <Field.Label className={styles.label}>Confirm Password</Field.Label>
+            <Field.Label className={styles.label}>Confirmar senha</Field.Label>
             <div className={styles.inputWrapper}>
               <Field.Control
                 type={showPassword ? "text" : "password"}
@@ -203,7 +231,7 @@ export function Login({ value }) {
                 required
                 value={formValues.confirmPassword}
                 onChange={handleInputChange}
-                placeholder="Confirm your password"
+                placeholder="Confirme sua senha"
                 className={styles.input}
               />
               <button
@@ -235,20 +263,20 @@ export function Login({ value }) {
               }}
             />
           ) : mode === "signin" ? (
-            "Sign In"
+            "Entrar"
           ) : (
-            "Register"
+            "Registrar"
           )}
         </button>
       </Form>
       {mode === "register" && (
         <button onClick={() => setMode("signin")} className={styles.info}>
-          Already have an account? Click here!
+          Já tem uma conta? Clique aqui!
         </button>
       )}
       {mode === "signin" && (
         <button onClick={() => setMode("register")} className={styles.info}>
-          Don't have an account? Click here!
+          Não tem uma conta? Clique aqui!
         </button>
       )}
     </div>

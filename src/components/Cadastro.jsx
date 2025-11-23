@@ -1,11 +1,10 @@
 import { useState, useContext } from "react";
-import { CartContext } from "../context/CartContext";
-import { useNavigate } from "react-router-dom";
+import { SessionContext } from "../context/SessionContext";
 import styles from "./Cadastro.module.css";
 
 export default function Cadastro() {
-  const { signUp, sessionError } = useContext(CartContext);
-  const navigate = useNavigate();
+  const { handleSignUp, sessionError, sessionLoading } =
+    useContext(SessionContext);
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -14,11 +13,9 @@ export default function Cadastro() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    const ok = await signUp(email, senha, nome);
-
-    if (ok) {
-      navigate("/login"); // ou a página que quiser
-    }
+    // Usa a função REAL do seu projeto original
+    // Ela já cria o perfil e redireciona para /signin
+    await handleSignUp(email, senha, nome);
   }
 
   return (
@@ -60,11 +57,13 @@ export default function Cadastro() {
           <p className={styles.error}>{sessionError}</p>
         )}
 
-        <button type="submit">Cadastrar</button>
+        <button disabled={sessionLoading} type="submit">
+          {sessionLoading ? "Cadastrando..." : "Cadastrar"}
+        </button>
       </form>
 
-      <p style={{ marginTop: "10px" }}>
-        Já tem conta? <a href="/login">Entrar</a>
+      <p style={{ marginTop: "15px" }}>
+        Já tem conta? <a href="/signin">Entrar</a>
       </p>
     </div>
   );

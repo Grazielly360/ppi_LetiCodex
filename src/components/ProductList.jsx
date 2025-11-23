@@ -8,6 +8,9 @@ export function ProductList() {
   
   const { products, loading, error } = useContext(CartContext);
 
+  // Componente que lista produtos e fornece busca simples
+  // - utiliza CartContext para obter produtos e estado de carregamento
+
   const [filteredProducts, setFilteredProducts] = useState([]);
 
   const searchInput = useRef(null);
@@ -39,12 +42,12 @@ export function ProductList() {
         <input
           ref={searchInput}
           type="text"
-          placeholder="Search products..."
+          placeholder="Pesquisar produtos..."
           className={styles.searchInput}
           onChange={handleSearch}
         />
         <button className={styles.searchButton} onClick={handleClear}>
-          CLEAR
+          LIMPAR
         </button>
       </div>
       <div className={styles.productList}>
@@ -59,7 +62,7 @@ export function ProductList() {
             style={{ margin: "2rem auto", display: "block" }}
             sx={{ color: "#001111" }}
           />
-          <p>Loading products...</p>
+          <p>Carregando produtos...</p>
         </div>
       )}
       {error && <p>❌ {error}</p>}
