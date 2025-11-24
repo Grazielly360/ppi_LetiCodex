@@ -17,6 +17,7 @@
   position: absolute;
   top: 1.75rem;
   right: 1.75rem;
+
 }
 .adminToggle .button {
   padding: 0.65rem 1rem;
@@ -33,7 +34,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin-top: 0.5rem;
+  margin-top: 1.5rem;
 }
 .adminInput, .adminTextarea {
   width: 100%;

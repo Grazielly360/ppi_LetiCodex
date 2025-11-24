@@ -8,9 +8,6 @@ export function ProductList() {
   
   const { products, loading, error } = useContext(CartContext);
 
-  // Componente que lista produtos e fornece busca simples
-  // - utiliza CartContext para obter produtos e estado de carregamento
-
   const [filteredProducts, setFilteredProducts] = useState([]);
 
   const searchInput = useRef(null);
@@ -36,18 +33,21 @@ export function ProductList() {
     setFilteredProducts(products);
   }
 
+  console.log("Products from supabase:", products);
+
+
   return (
     <div className={styles.container}>
       <div className={styles.searchContainer}>
         <input
           ref={searchInput}
           type="text"
-          placeholder="Pesquisar produtos..."
+          placeholder="Procurar produtos..."
           className={styles.searchInput}
           onChange={handleSearch}
         />
         <button className={styles.searchButton} onClick={handleClear}>
-          LIMPAR
+          Limpar
         </button>
       </div>
       <div className={styles.productList}>
@@ -62,11 +62,10 @@ export function ProductList() {
             style={{ margin: "2rem auto", display: "block" }}
             sx={{ color: "#001111" }}
           />
-          <p>Carregando produtos...</p>
+          <p>Carregando Produtos...</p>
         </div>
       )}
       {error && <p>❌ {error}</p>}
     </div>
   );
 }
-  
