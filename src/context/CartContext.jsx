@@ -53,7 +53,16 @@ export function CartProvider({ children }) {
     }
   }
 
-  // Carregar produtos e carrinho apenas uma vez, quando a session mudar
+  // Carregar produtos ao montar a aplicação (mesmo sem sessão).
+  // O carregamento do carrinho (associado ao usuário) continuará
+  // sendo feito quando a `session` estiver disponível.
+  useEffect(() => {
+    refreshProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Quando a sessão mudar, chamar refreshProducts novamente para garantir
+  // que itens relacionados ao usuário (carrinho) sejam recarregados.
   useEffect(() => {
     if (session) {
       refreshProducts();
